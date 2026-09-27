@@ -1,0 +1,841 @@
+"""
+SetuX / VeriX — Database Seed Script
+Seeds SQLite with:
+1. 30 realistic demo projects across Maharashtra
+2. Default Officer User (Aarav Patil)
+3. Initial evidence records & sample images for demo gallery
+4. Initial audit logs
+
+⚠ DEMO ENVIRONMENT — All project data is simulated for SIH prototype purposes.
+"""
+import sys
+import os
+import json
+from datetime import datetime
+from PIL import Image, ImageDraw
+
+# Add backend to path
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "backend"))
+
+from app.database.database import SessionLocal, init_db
+from app.database.models import Project, User, Evidence, AuditLog
+from app.auth.security import hash_password
+
+UPLOAD_BASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "backend", "uploads")
+
+
+def create_dummy_image(path: str, title: str, color: tuple):
+    """Generate a clean visual placeholder image on disk if not present."""
+    if os.path.exists(path):
+        return
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    img = Image.new('RGB', (800, 500), color=color)
+    draw = ImageDraw.Draw(img)
+    # Draw simple frame & text
+    draw.rectangle([20, 20, 780, 480], outline=(255, 255, 255), width=3)
+    draw.text((40, 50), "VeriX / SetuX Site Evidence", fill=(255, 255, 255))
+    draw.text((40, 80), title, fill=(255, 255, 255))
+    draw.text((40, 110), f"Timestamp: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}", fill=(200, 200, 200))
+    draw.text((40, 140), "GPS Geotag: 18.5089 N, 73.9260 E (Pune, MH)", fill=(200, 200, 200))
+    img.save(path, quality=85)
+
+
+DEMO_PROJECTS = [
+    # ─── PUNE DISTRICT (15 projects) ────────────────────────────────
+    {
+        "project_id": "MH-PN-001",
+        "name": "Hadapsar Road Development — Phase 2",
+        "department": "PWD",
+        "district": "Pune",
+        "taluka": "Haveli",
+        "location_name": "Hadapsar, Pune",
+        "lat": 18.5089,
+        "lng": 73.9260,
+        "project_type": "Road Construction",
+        "contractor": "Kalpataru Infrastructure Ltd. (Demo)",
+        "budget_lakh": 485.0,
+        "start_date": "2025-04-01",
+        "expected_completion": "2026-09-30",
+        "reported_progress": 100,
+        "ai_estimated_progress": 71,
+        "status": "Review Required",
+        "risk_level": "HIGH",
+        "anomaly_score": 78,
+        "last_evidence_date": "18 Aug 2026",
+    },
+    {
+        "project_id": "MH-PN-002",
+        "name": "Kothrud Drainage Improvement",
+        "department": "PMC",
+        "district": "Pune",
+        "taluka": "Haveli",
+        "location_name": "Kothrud, Pune",
+        "lat": 18.5074,
+        "lng": 73.8077,
+        "project_type": "Drainage",
+        "contractor": "Nirmaan Constructions (Demo)",
+        "budget_lakh": 220.0,
+        "start_date": "2025-06-01",
+        "expected_completion": "2026-06-30",
+        "reported_progress": 85,
+        "ai_estimated_progress": 82,
+        "status": "Verified",
+        "risk_level": "LOW",
+        "anomaly_score": 12,
+        "last_evidence_date": "15 Aug 2026",
+    },
+    {
+        "project_id": "MH-PN-003",
+        "name": "Baner-Balewadi Road Widening",
+        "department": "PWD",
+        "district": "Pune",
+        "taluka": "Mulshi",
+        "location_name": "Baner, Pune",
+        "lat": 18.5590,
+        "lng": 73.7868,
+        "project_type": "Road Construction",
+        "contractor": "Sahyadri Road Works (Demo)",
+        "budget_lakh": 680.0,
+        "start_date": "2025-03-15",
+        "expected_completion": "2026-12-31",
+        "reported_progress": 60,
+        "ai_estimated_progress": 58,
+        "status": "Verified",
+        "risk_level": "LOW",
+        "anomaly_score": 8,
+        "last_evidence_date": "10 Aug 2026",
+    },
+    {
+        "project_id": "MH-PN-004",
+        "name": "Wagholi Primary School Renovation",
+        "department": "ZP Education",
+        "district": "Pune",
+        "taluka": "Haveli",
+        "location_name": "Wagholi, Pune",
+        "lat": 18.5681,
+        "lng": 73.9828,
+        "project_type": "School",
+        "contractor": "Shree Constructions (Demo)",
+        "budget_lakh": 145.0,
+        "start_date": "2025-07-01",
+        "expected_completion": "2026-11-30",
+        "reported_progress": 75,
+        "ai_estimated_progress": 48,
+        "status": "Review Required",
+        "risk_level": "HIGH",
+        "anomaly_score": 82,
+        "last_evidence_date": "12 Aug 2026",
+    },
+    {
+        "project_id": "MH-PN-005",
+        "name": "Shivajinagar Water Supply Upgrade",
+        "department": "PMRDA",
+        "district": "Pune",
+        "taluka": "Haveli",
+        "location_name": "Shivajinagar, Pune",
+        "lat": 18.5308,
+        "lng": 73.8474,
+        "project_type": "Water Pipeline",
+        "contractor": "Maharashtra Jal Pvt. Ltd. (Demo)",
+        "budget_lakh": 312.0,
+        "start_date": "2025-05-15",
+        "expected_completion": "2026-08-31",
+        "reported_progress": 90,
+        "ai_estimated_progress": 88,
+        "status": "Verified",
+        "risk_level": "LOW",
+        "anomaly_score": 10,
+        "last_evidence_date": "14 Aug 2026",
+    },
+    {
+        "project_id": "MH-PN-006",
+        "name": "Hinjawadi IT Park Access Road",
+        "department": "MIDC",
+        "district": "Pune",
+        "taluka": "Mulshi",
+        "location_name": "Hinjawadi, Pune",
+        "lat": 18.5989,
+        "lng": 73.7369,
+        "project_type": "Road Construction",
+        "contractor": "Tech Infrastructure Co. (Demo)",
+        "budget_lakh": 920.0,
+        "start_date": "2025-01-10",
+        "expected_completion": "2026-06-30",
+        "reported_progress": 100,
+        "ai_estimated_progress": 92,
+        "status": "Completed",
+        "risk_level": "LOW",
+        "anomaly_score": 14,
+        "last_evidence_date": "30 Jul 2026",
+    },
+    {
+        "project_id": "MH-PN-007",
+        "name": "Pimpri Streetlight Installation — Phase 1",
+        "department": "PCMC",
+        "district": "Pimpri-Chinchwad",
+        "taluka": "Pimpri",
+        "location_name": "Pimpri-Chinchwad",
+        "lat": 18.6298,
+        "lng": 73.7997,
+        "project_type": "Streetlight",
+        "contractor": "LED Infrastructure India (Demo)",
+        "budget_lakh": 88.0,
+        "start_date": "2025-09-01",
+        "expected_completion": "2026-03-31",
+        "reported_progress": 100,
+        "ai_estimated_progress": 95,
+        "status": "Completed",
+        "risk_level": "LOW",
+        "anomaly_score": 9,
+        "last_evidence_date": "02 Apr 2026",
+    },
+    {
+        "project_id": "MH-PN-008",
+        "name": "Hadapsar Community Hall Construction",
+        "department": "PMC",
+        "district": "Pune",
+        "taluka": "Haveli",
+        "location_name": "Hadapsar, Pune",
+        "lat": 18.5044,
+        "lng": 73.9411,
+        "project_type": "Government Building",
+        "contractor": "Doshi & Sons Infra (Demo)",
+        "budget_lakh": 280.0,
+        "start_date": "2025-08-01",
+        "expected_completion": "2027-02-28",
+        "reported_progress": 40,
+        "ai_estimated_progress": 38,
+        "status": "Verified",
+        "risk_level": "LOW",
+        "anomaly_score": 6,
+        "last_evidence_date": "16 Aug 2026",
+    },
+    {
+        "project_id": "MH-PN-009",
+        "name": "Kondhwa Road Repair & Pothole Filling",
+        "department": "PWD",
+        "district": "Pune",
+        "taluka": "Haveli",
+        "location_name": "Kondhwa, Pune",
+        "lat": 18.4683,
+        "lng": 73.8945,
+        "project_type": "Road Repair",
+        "contractor": "Roadfix Solutions (Demo)",
+        "budget_lakh": 95.0,
+        "start_date": "2026-01-15",
+        "expected_completion": "2026-07-31",
+        "reported_progress": 100,
+        "ai_estimated_progress": 68,
+        "status": "Review Required",
+        "risk_level": "HIGH",
+        "anomaly_score": 91,
+        "last_evidence_date": "01 Aug 2026",
+    },
+    {
+        "project_id": "MH-PN-010",
+        "name": "Chinchwad Public Toilet Block — Ward 12",
+        "department": "PCMC",
+        "district": "Pimpri-Chinchwad",
+        "taluka": "Chinchwad",
+        "location_name": "Chinchwad, Pune",
+        "lat": 18.6480,
+        "lng": 73.8015,
+        "project_type": "Public Toilet",
+        "contractor": "Swachh Constructions (Demo)",
+        "budget_lakh": 42.0,
+        "start_date": "2025-11-01",
+        "expected_completion": "2026-04-30",
+        "reported_progress": 100,
+        "ai_estimated_progress": 100,
+        "status": "Completed",
+        "risk_level": "LOW",
+        "anomaly_score": 4,
+        "last_evidence_date": "01 May 2026",
+    },
+    {
+        "project_id": "MH-PN-011",
+        "name": "Aundh Flyover Repair",
+        "department": "PWD",
+        "district": "Pune",
+        "taluka": "Haveli",
+        "location_name": "Aundh, Pune",
+        "lat": 18.5590,
+        "lng": 73.8077,
+        "project_type": "Bridge",
+        "contractor": "BridgeTech Infra (Demo)",
+        "budget_lakh": 540.0,
+        "start_date": "2025-10-01",
+        "expected_completion": "2027-03-31",
+        "reported_progress": 35,
+        "ai_estimated_progress": 22,
+        "status": "Delayed",
+        "risk_level": "MEDIUM",
+        "anomaly_score": 55,
+        "last_evidence_date": "05 Aug 2026",
+    },
+    {
+        "project_id": "MH-PN-012",
+        "name": "Pune-Satara Road Widening — Sinhagad Stretch",
+        "department": "NHAI",
+        "district": "Pune",
+        "taluka": "Haveli",
+        "location_name": "Sinhagad Road, Pune",
+        "lat": 18.4561,
+        "lng": 73.8276,
+        "project_type": "Road Construction",
+        "contractor": "National Highway Works (Demo)",
+        "budget_lakh": 1850.0,
+        "start_date": "2024-12-01",
+        "expected_completion": "2027-06-30",
+        "reported_progress": 55,
+        "ai_estimated_progress": 51,
+        "status": "Verified",
+        "risk_level": "LOW",
+        "anomaly_score": 11,
+        "last_evidence_date": "19 Aug 2026",
+    },
+    {
+        "project_id": "MH-PN-013",
+        "name": "Wanowrie Storm Water Drain",
+        "department": "PMC",
+        "district": "Pune",
+        "taluka": "Haveli",
+        "location_name": "Wanowrie, Pune",
+        "lat": 18.4880,
+        "lng": 73.9017,
+        "project_type": "Drainage",
+        "contractor": "Drain Works India (Demo)",
+        "budget_lakh": 178.0,
+        "start_date": "2025-04-15",
+        "expected_completion": "2026-10-31",
+        "reported_progress": 70,
+        "ai_estimated_progress": 44,
+        "status": "Review Required",
+        "risk_level": "HIGH",
+        "anomaly_score": 74,
+        "last_evidence_date": "11 Aug 2026",
+    },
+    {
+        "project_id": "MH-PN-014",
+        "name": "Nigdi Water Treatment Plant Upgrade",
+        "department": "PCMC",
+        "district": "Pimpri-Chinchwad",
+        "taluka": "Pimpri",
+        "location_name": "Nigdi, Pimpri-Chinchwad",
+        "lat": 18.6649,
+        "lng": 73.7665,
+        "project_type": "Water Pipeline",
+        "contractor": "Aqua Engineers (Demo)",
+        "budget_lakh": 395.0,
+        "start_date": "2025-07-01",
+        "expected_completion": "2026-12-31",
+        "reported_progress": 50,
+        "ai_estimated_progress": 48,
+        "status": "Verified",
+        "risk_level": "LOW",
+        "anomaly_score": 7,
+        "last_evidence_date": "08 Aug 2026",
+    },
+    {
+        "project_id": "MH-PN-015",
+        "name": "Talegaon New Government School Building",
+        "department": "ZP Education",
+        "district": "Pune",
+        "taluka": "Maval",
+        "location_name": "Talegaon Dabhade, Pune",
+        "lat": 18.7338,
+        "lng": 73.6723,
+        "project_type": "School",
+        "contractor": "Vidya Constructions (Demo)",
+        "budget_lakh": 210.0,
+        "start_date": "2025-06-01",
+        "expected_completion": "2026-11-30",
+        "reported_progress": 65,
+        "ai_estimated_progress": 60,
+        "status": "Verified",
+        "risk_level": "LOW",
+        "anomaly_score": 15,
+        "last_evidence_date": "13 Aug 2026",
+    },
+
+    # ─── NASHIK DISTRICT (5 projects) ───────────────────────────────
+    {
+        "project_id": "MH-NK-001",
+        "name": "Nashik Road Bypass — Phase 3",
+        "department": "PWD",
+        "district": "Nashik",
+        "taluka": "Nashik",
+        "location_name": "Nashik Road, Nashik",
+        "lat": 19.9975,
+        "lng": 73.8038,
+        "project_type": "Road Construction",
+        "contractor": "Deccan Roads Ltd. (Demo)",
+        "budget_lakh": 760.0,
+        "start_date": "2025-02-01",
+        "expected_completion": "2026-10-31",
+        "reported_progress": 80,
+        "ai_estimated_progress": 58,
+        "status": "Review Required",
+        "risk_level": "HIGH",
+        "anomaly_score": 84,
+        "last_evidence_date": "10 Aug 2026",
+    },
+    {
+        "project_id": "MH-NK-002",
+        "name": "Sinnar Bridge Reconstruction",
+        "department": "PWD",
+        "district": "Nashik",
+        "taluka": "Sinnar",
+        "location_name": "Sinnar, Nashik",
+        "lat": 19.8477,
+        "lng": 74.0009,
+        "project_type": "Bridge",
+        "contractor": "Girder Works India (Demo)",
+        "budget_lakh": 890.0,
+        "start_date": "2024-11-01",
+        "expected_completion": "2027-03-31",
+        "reported_progress": 45,
+        "ai_estimated_progress": 43,
+        "status": "Verified",
+        "risk_level": "LOW",
+        "anomaly_score": 9,
+        "last_evidence_date": "09 Aug 2026",
+    },
+    {
+        "project_id": "MH-NK-003",
+        "name": "Nashik Municipal School Toilet Block",
+        "department": "NMC",
+        "district": "Nashik",
+        "taluka": "Nashik",
+        "location_name": "Gangapur, Nashik",
+        "lat": 20.0134,
+        "lng": 73.7683,
+        "project_type": "Public Toilet",
+        "contractor": "Swachh Maharashtra Corp (Demo)",
+        "budget_lakh": 38.0,
+        "start_date": "2025-08-01",
+        "expected_completion": "2026-01-31",
+        "reported_progress": 100,
+        "ai_estimated_progress": 100,
+        "status": "Completed",
+        "risk_level": "LOW",
+        "anomaly_score": 5,
+        "last_evidence_date": "01 Feb 2026",
+    },
+    {
+        "project_id": "MH-NK-004",
+        "name": "Igatpuri Water Supply Pipeline",
+        "department": "ZP",
+        "district": "Nashik",
+        "taluka": "Igatpuri",
+        "location_name": "Igatpuri, Nashik",
+        "lat": 19.6936,
+        "lng": 73.5595,
+        "project_type": "Water Pipeline",
+        "contractor": "Jal Vikas Corp (Demo)",
+        "budget_lakh": 185.0,
+        "start_date": "2025-03-01",
+        "expected_completion": "2026-09-30",
+        "reported_progress": 75,
+        "ai_estimated_progress": 55,
+        "status": "Delayed",
+        "risk_level": "MEDIUM",
+        "anomaly_score": 52,
+        "last_evidence_date": "28 Jul 2026",
+    },
+    {
+        "project_id": "MH-NK-005",
+        "name": "Lasalgaon Agricultural Warehouse",
+        "department": "Agriculture Dept",
+        "district": "Nashik",
+        "taluka": "Niphad",
+        "location_name": "Lasalgaon, Nashik",
+        "lat": 20.1167,
+        "lng": 74.0500,
+        "project_type": "Government Building",
+        "contractor": "Agri Infra Ltd. (Demo)",
+        "budget_lakh": 320.0,
+        "start_date": "2025-05-01",
+        "expected_completion": "2026-11-30",
+        "reported_progress": 60,
+        "ai_estimated_progress": 55,
+        "status": "Verified",
+        "risk_level": "LOW",
+        "anomaly_score": 14,
+        "last_evidence_date": "07 Aug 2026",
+    },
+
+    # ─── NAGPUR DISTRICT (5 projects) ───────────────────────────────
+    {
+        "project_id": "MH-NG-001",
+        "name": "Nagpur Metro Feeder Road — Dharampeth",
+        "department": "NMC",
+        "district": "Nagpur",
+        "taluka": "Nagpur City",
+        "location_name": "Dharampeth, Nagpur",
+        "lat": 21.1458,
+        "lng": 79.0882,
+        "project_type": "Road Construction",
+        "contractor": "Metro Roads India (Demo)",
+        "budget_lakh": 510.0,
+        "start_date": "2025-04-01",
+        "expected_completion": "2026-09-30",
+        "reported_progress": 88,
+        "ai_estimated_progress": 85,
+        "status": "Verified",
+        "risk_level": "LOW",
+        "anomaly_score": 11,
+        "last_evidence_date": "17 Aug 2026",
+    },
+    {
+        "project_id": "MH-NG-002",
+        "name": "Kamptee Road Bridge Repair",
+        "department": "PWD",
+        "district": "Nagpur",
+        "taluka": "Kamptee",
+        "location_name": "Kamptee, Nagpur",
+        "lat": 21.2277,
+        "lng": 79.1963,
+        "project_type": "Bridge",
+        "contractor": "Vidarbha Bridge Works (Demo)",
+        "budget_lakh": 430.0,
+        "start_date": "2025-06-01",
+        "expected_completion": "2027-01-31",
+        "reported_progress": 40,
+        "ai_estimated_progress": 38,
+        "status": "Verified",
+        "risk_level": "LOW",
+        "anomaly_score": 8,
+        "last_evidence_date": "14 Aug 2026",
+    },
+    {
+        "project_id": "MH-NG-003",
+        "name": "Hingna Industrial Road Repair",
+        "department": "MIDC",
+        "district": "Nagpur",
+        "taluka": "Hingna",
+        "location_name": "Hingna, Nagpur",
+        "lat": 21.1025,
+        "lng": 78.9755,
+        "project_type": "Road Repair",
+        "contractor": "Industrial Roads Co. (Demo)",
+        "budget_lakh": 115.0,
+        "start_date": "2026-01-01",
+        "expected_completion": "2026-06-30",
+        "reported_progress": 100,
+        "ai_estimated_progress": 70,
+        "status": "Review Required",
+        "risk_level": "HIGH",
+        "anomaly_score": 79,
+        "last_evidence_date": "03 Aug 2026",
+    },
+    {
+        "project_id": "MH-NG-004",
+        "name": "Nagpur Smart City Streetlights — Sitabuldi",
+        "department": "NMC Smart City",
+        "district": "Nagpur",
+        "taluka": "Nagpur City",
+        "location_name": "Sitabuldi, Nagpur",
+        "lat": 21.1497,
+        "lng": 79.0795,
+        "project_type": "Streetlight",
+        "contractor": "Vidarbha LED Solutions (Demo)",
+        "budget_lakh": 75.0,
+        "start_date": "2025-10-01",
+        "expected_completion": "2026-04-30",
+        "reported_progress": 100,
+        "ai_estimated_progress": 100,
+        "status": "Completed",
+        "risk_level": "LOW",
+        "anomaly_score": 3,
+        "last_evidence_date": "02 May 2026",
+    },
+    {
+        "project_id": "MH-NG-005",
+        "name": "Butibori Drainage Network",
+        "department": "PWD",
+        "district": "Nagpur",
+        "taluka": "Hingna",
+        "location_name": "Butibori, Nagpur",
+        "lat": 20.9876,
+        "lng": 79.0134,
+        "project_type": "Drainage",
+        "contractor": "Vidarbha Drainage Corp (Demo)",
+        "budget_lakh": 240.0,
+        "start_date": "2025-07-15",
+        "expected_completion": "2026-12-31",
+        "reported_progress": 55,
+        "ai_estimated_progress": 38,
+        "status": "Delayed",
+        "risk_level": "MEDIUM",
+        "anomaly_score": 62,
+        "last_evidence_date": "20 Jul 2026",
+    },
+
+    # ─── OTHER DISTRICTS (5 projects) ───────────────────────────────
+    {
+        "project_id": "MH-MB-001",
+        "name": "Thane Creek Bridge — Approach Road",
+        "department": "PWD",
+        "district": "Thane",
+        "taluka": "Thane",
+        "location_name": "Thane, Mumbai Metro Region",
+        "lat": 19.2183,
+        "lng": 72.9781,
+        "project_type": "Bridge",
+        "contractor": "Mumbai Infra Projects (Demo)",
+        "budget_lakh": 1420.0,
+        "start_date": "2024-09-01",
+        "expected_completion": "2027-08-31",
+        "reported_progress": 30,
+        "ai_estimated_progress": 28,
+        "status": "Verified",
+        "risk_level": "LOW",
+        "anomaly_score": 7,
+        "last_evidence_date": "18 Aug 2026",
+    },
+    {
+        "project_id": "MH-KL-001",
+        "name": "Kolhapur Ring Road — Section B",
+        "department": "PWD",
+        "district": "Kolhapur",
+        "taluka": "Karveer",
+        "location_name": "Kolhapur City",
+        "lat": 16.7050,
+        "lng": 74.2433,
+        "project_type": "Road Construction",
+        "contractor": "Panchganga Roads (Demo)",
+        "budget_lakh": 620.0,
+        "start_date": "2025-01-01",
+        "expected_completion": "2026-12-31",
+        "reported_progress": 70,
+        "ai_estimated_progress": 45,
+        "status": "Review Required",
+        "risk_level": "HIGH",
+        "anomaly_score": 68,
+        "last_evidence_date": "06 Aug 2026",
+    },
+    {
+        "project_id": "MH-ST-001",
+        "name": "Satara District Hospital Building",
+        "department": "Health Dept",
+        "district": "Satara",
+        "taluka": "Satara",
+        "location_name": "Satara City",
+        "lat": 17.6805,
+        "lng": 73.9954,
+        "project_type": "Government Building",
+        "contractor": "Satara Constructions (Demo)",
+        "budget_lakh": 850.0,
+        "start_date": "2024-06-01",
+        "expected_completion": "2026-12-31",
+        "reported_progress": 65,
+        "ai_estimated_progress": 62,
+        "status": "Verified",
+        "risk_level": "LOW",
+        "anomaly_score": 10,
+        "last_evidence_date": "15 Aug 2026",
+    },
+    {
+        "project_id": "MH-CS-001",
+        "name": "Chhatrapati Sambhajinagar Water Supply — Zone 3",
+        "department": "AURIC",
+        "district": "Chhatrapati Sambhajinagar",
+        "taluka": "Aurangabad",
+        "location_name": "Cidco, Chhatrapati Sambhajinagar",
+        "lat": 19.8762,
+        "lng": 75.3433,
+        "project_type": "Water Pipeline",
+        "contractor": "Marathwada Jal Corp (Demo)",
+        "budget_lakh": 450.0,
+        "start_date": "2025-03-01",
+        "expected_completion": "2026-09-30",
+        "reported_progress": 80,
+        "ai_estimated_progress": 60,
+        "status": "Delayed",
+        "risk_level": "MEDIUM",
+        "anomaly_score": 58,
+        "last_evidence_date": "25 Jul 2026",
+    },
+    {
+        "project_id": "MH-SL-001",
+        "name": "Solapur Solar Streetlights — Phase 2",
+        "department": "SMC",
+        "district": "Solapur",
+        "taluka": "Solapur North",
+        "location_name": "Solapur City",
+        "lat": 17.6854,
+        "lng": 75.9064,
+        "project_type": "Streetlight",
+        "contractor": "Solar Infra Works (Demo)",
+        "budget_lakh": 65.0,
+        "start_date": "2025-09-15",
+        "expected_completion": "2026-03-31",
+        "reported_progress": 100,
+        "ai_estimated_progress": 100,
+        "status": "Completed",
+        "risk_level": "LOW",
+        "anomaly_score": 5,
+        "last_evidence_date": "05 Apr 2026",
+    },
+]
+
+
+def seed():
+    init_db()
+    db = SessionLocal()
+
+    try:
+        print("[DEMO] Seeding simulated project data for SIH prototype...")
+        
+        # 1. Seed Projects
+        count = 0
+        for data in DEMO_PROJECTS:
+            existing_project = db.query(Project).filter(
+                Project.project_id == data["project_id"]
+            ).first()
+            if not existing_project:
+                project = Project(**data, is_demo=True)
+                db.add(project)
+                count += 1
+
+        db.commit()
+        print(f"[OK] Seeded {count} demo projects across Maharashtra.")
+
+        # 2. Seed Default Officer User (Aarav Patil)
+        user = db.query(User).filter(User.email == "aarav.patil@demo.gov.in").first()
+        if not user:
+            user = User(
+                name="Aarav Patil",
+                email="aarav.patil@demo.gov.in",
+                department="Public Works Department",
+                designation="Project Monitoring Officer",
+                district="Pune",
+                employee_id="DEMO-PWD-1024",
+                password_hash=hash_password("password"),
+                role="OFFICER",
+                last_login="21 Aug 2026 19:30",
+                created_at=datetime.utcnow()
+            )
+            db.add(user)
+            db.commit()
+            print("[OK] Created default demo officer user: Aarav Patil (aarav.patil@demo.gov.in / password)")
+
+        # 3. Create Sample Evidence Images on disk
+        img_before = os.path.join(UPLOAD_BASE, "before", "MH-PN-001_baseline_site.jpg")
+        img_during = os.path.join(UPLOAD_BASE, "evidence", "MH-PN-001_subbase_compaction.jpg")
+        img_after = os.path.join(UPLOAD_BASE, "after", "MH-PN-001_asphalt_layer.jpg")
+
+        create_dummy_image(img_before, "BASELINE EXCAVATION (0% Complete)", (50, 70, 90))
+        create_dummy_image(img_during, "SUB-BASE COMPACTION (45% Complete)", (70, 90, 60))
+        create_dummy_image(img_after, "ASPHALT COATING & CURB WORK (71% Complete)", (40, 60, 100))
+
+        # 4. Seed Initial Evidence Records for MH-PN-001
+        existing_ev = db.query(Evidence).filter(Evidence.project_id == "MH-PN-001").first()
+        if not existing_ev:
+            ev_list = [
+                Evidence(
+                    evidence_id="EV-MH-PN-001-20250410-01",
+                    project_id="MH-PN-001",
+                    uploaded_by="Aarav Patil",
+                    evidence_type="Before Work",
+                    filename="baseline_site_excavation.jpg",
+                    stored_filename="MH-PN-001_baseline_site.jpg",
+                    file_path=img_before,
+                    file_url="/uploads/before/MH-PN-001_baseline_site.jpg",
+                    file_size=420100,
+                    mime_type="image/jpeg",
+                    latitude=18.5089,
+                    longitude=73.9260,
+                    timestamp="10 Apr 2025 10:15",
+                    reported_progress=0,
+                    remarks="Baseline ground site survey before road excavation.",
+                    verification_status="Verified",
+                    submitted_at=datetime(2025, 4, 10, 10, 15)
+                ),
+                Evidence(
+                    evidence_id="EV-MH-PN-001-20251120-02",
+                    project_id="MH-PN-001",
+                    uploaded_by="Aarav Patil",
+                    evidence_type="During Work",
+                    filename="subbase_gravel_compaction.jpg",
+                    stored_filename="MH-PN-001_subbase_compaction.jpg",
+                    file_path=img_during,
+                    file_url="/uploads/evidence/MH-PN-001_subbase_compaction.jpg",
+                    file_size=580400,
+                    mime_type="image/jpeg",
+                    latitude=18.5089,
+                    longitude=73.9260,
+                    timestamp="20 Nov 2025 14:30",
+                    reported_progress=50,
+                    remarks="Sub-base layer compaction and kerb alignment in progress.",
+                    verification_status="Verified",
+                    submitted_at=datetime(2025, 11, 20, 14, 30)
+                ),
+                Evidence(
+                    evidence_id="EV-MH-PN-001-20260818-03",
+                    project_id="MH-PN-001",
+                    uploaded_by="Aarav Patil",
+                    evidence_type="Current / After Work",
+                    filename="hadapsar_asphalt_layer_current.jpg",
+                    stored_filename="MH-PN-001_asphalt_layer.jpg",
+                    file_path=img_after,
+                    file_url="/uploads/after/MH-PN-001_asphalt_layer.jpg",
+                    file_size=690200,
+                    mime_type="image/jpeg",
+                    latitude=18.5089,
+                    longitude=73.9260,
+                    timestamp="18 Aug 2026 16:45",
+                    reported_progress=100,
+                    remarks="Final road blacktopping reported 100% complete.",
+                    verification_status="Review Required",
+                    ai_result=json.dumps({"estimated_progress": 71, "anomaly_score": 78, "recommendation": "MANUAL_INSPECTION"}),
+                    submitted_at=datetime(2026, 8, 18, 16, 45)
+                )
+            ]
+            for e in ev_list:
+                db.add(e)
+            db.commit()
+            print("[OK] Seeded 3 sample evidence records (Before, During, Current) for MH-PN-001")
+
+        # 5. Seed Initial Audit Logs
+        existing_audit = db.query(AuditLog).first()
+        if not existing_audit:
+            audits = [
+                AuditLog(
+                    project_id="MH-PN-001",
+                    user_name="Aarav Patil",
+                    action="OFFICER_LOGIN",
+                    details="Officer Aarav Patil logged in from Pune Division Office",
+                    timestamp=datetime(2026, 8, 18, 16, 30)
+                ),
+                AuditLog(
+                    project_id="MH-PN-001",
+                    user_name="Aarav Patil",
+                    action="UPLOAD_EVIDENCE",
+                    details="Aarav Patil uploaded 1 Current / After Work image for MH-PN-001",
+                    timestamp=datetime(2026, 8, 18, 16, 45)
+                ),
+                AuditLog(
+                    project_id="MH-PN-001",
+                    user_name="AI Verification Engine",
+                    action="VERIFICATION_RUN",
+                    details="Verification finished: Reported 100% vs AI Est 71%. Anomaly: 78/100. Status -> Review Required",
+                    timestamp=datetime(2026, 8, 18, 16, 46)
+                )
+            ]
+            for a in audits:
+                db.add(a)
+            db.commit()
+            print("[OK] Seeded initial audit log trail")
+
+    except Exception as e:
+        db.rollback()
+        print(f"[ERROR] Seed error: {e}")
+        raise
+    finally:
+        db.close()
+
+
+if __name__ == "__main__":
+    seed()

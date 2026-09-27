@@ -1,0 +1,34 @@
+# Dependency directories
+node_modules/
+jspm_packages/
+web_3500/
+
+# Build outputs
+dist/
+build/
+.svelte-kit/
+.next/
+out/
+
+# Python environments & caches
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+.env
+
+# Database file
+*.db
+*.sqlite3
+test_*.db
+
+# Temporary & Generated Uploads / Reports
+uploads/reports/*.pdf
+.pytest_cache/
+
+# OS metadata
+.DS_Store
+Thumbs.db

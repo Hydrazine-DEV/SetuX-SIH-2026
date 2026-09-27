@@ -1,0 +1,211 @@
+{
+  "model_name": "Logistic Regression",
+  "model_type": "LogisticRegression",
+  "model_version": "v1.0.0",
+  "trained_at": "2026-09-21T18:47:51.756256",
+  "data_source": "SYNTHETIC_DEVELOPMENT_FIXTURE",
+  "cost_overrun_threshold_pct": 5.0,
+  "target_definition": "(revised_cost - original_cost) / original_cost * 100 > 5.0%",
+  "dataset_summary": {
+    "total_samples": 100,
+    "overrun_count": 32,
+    "non_overrun_count": 68,
+    "overrun_pct": 32.0,
+    "feature_count": 22
+  },
+  "features_used": {
+    "numeric": [
+      "original_cost",
+      "expenditure",
+      "planned_duration_days",
+      "elapsed_duration_days",
+      "elapsed_duration_ratio",
+      "physical_progress",
+      "financial_progress",
+      "progress_gap",
+      "financial_physical_gap",
+      "budget_utilization_ratio",
+      "total_milestones",
+      "completed_milestones",
+      "delayed_milestones",
+      "delayed_milestone_ratio",
+      "total_issues",
+      "open_issues",
+      "critical_issues",
+      "unresolved_issue_ratio"
+    ],
+    "categorical": [
+      "sector",
+      "department_name",
+      "district",
+      "state"
+    ]
+  },
+  "features_excluded_leakage": [
+    {
+      "feature": "revised_cost",
+      "reason": "Direct leakage \u2014 revised_cost is the outcome variable used to define cost overrun."
+    },
+    {
+      "feature": "actual_completion_date",
+      "reason": "Temporal leakage \u2014 project completion date is known only after project concludes."
+    }
+  ],
+  "split_strategy": {
+    "total_records": 100,
+    "train_count": 70,
+    "val_count": 15,
+    "test_count": 15,
+    "split_mode": "chronological",
+    "small_dataset_limitation": false
+  },
+  "model_comparison": [
+    {
+      "model_name": "Majority Class Baseline",
+      "accuracy": 0.5333,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1_score": 0.0,
+      "roc_auc": 0.5,
+      "confusion_matrix": {
+        "tn": 8,
+        "fp": 0,
+        "fn": 7,
+        "tp": 0
+      }
+    },
+    {
+      "model_name": "Logistic Regression",
+      "accuracy": 0.4667,
+      "precision": 0.4615,
+      "recall": 0.8571,
+      "f1_score": 0.6,
+      "roc_auc": 0.6429,
+      "confusion_matrix": {
+        "tn": 1,
+        "fp": 7,
+        "fn": 1,
+        "tp": 6
+      }
+    },
+    {
+      "model_name": "Decision Tree",
+      "accuracy": 0.6,
+      "precision": 0.6667,
+      "recall": 0.2857,
+      "f1_score": 0.4,
+      "roc_auc": 0.5804,
+      "confusion_matrix": {
+        "tn": 7,
+        "fp": 1,
+        "fn": 5,
+        "tp": 2
+      }
+    },
+    {
+      "model_name": "Random Forest",
+      "accuracy": 0.4,
+      "precision": 0.4,
+      "recall": 0.5714,
+      "f1_score": 0.4706,
+      "roc_auc": 0.3929,
+      "confusion_matrix": {
+        "tn": 2,
+        "fp": 6,
+        "fn": 3,
+        "tp": 4
+      }
+    },
+    {
+      "model_name": "Gradient Boosting",
+      "accuracy": 0.4,
+      "precision": 0.375,
+      "recall": 0.4286,
+      "f1_score": 0.4,
+      "roc_auc": 0.4643,
+      "confusion_matrix": {
+        "tn": 3,
+        "fp": 5,
+        "fn": 4,
+        "tp": 3
+      }
+    }
+  ],
+  "selected_model_metrics": {
+    "model_name": "Logistic Regression",
+    "accuracy": 0.4667,
+    "precision": 0.4615,
+    "recall": 0.8571,
+    "f1_score": 0.6,
+    "roc_auc": 0.6429,
+    "confusion_matrix": {
+      "tn": 1,
+      "fp": 7,
+      "fn": 1,
+      "tp": 6
+    }
+  },
+  "top_feature_importances": [
+    {
+      "feature": "department_name_ZP Education",
+      "importance": 0.8987
+    },
+    {
+      "feature": "department_name_PCMC",
+      "importance": 0.8573
+    },
+    {
+      "feature": "sector_Water Pipeline",
+      "importance": 0.7424
+    },
+    {
+      "feature": "sector_Bridge",
+      "importance": 0.6489
+    },
+    {
+      "feature": "department_name_NMC",
+      "importance": 0.5212
+    },
+    {
+      "feature": "department_name_PMC",
+      "importance": 0.5003
+    },
+    {
+      "feature": "delayed_milestones",
+      "importance": 0.4986
+    },
+    {
+      "feature": "progress_gap",
+      "importance": 0.4675
+    },
+    {
+      "feature": "expenditure",
+      "importance": 0.4141
+    },
+    {
+      "feature": "sector_Road Construction",
+      "importance": 0.3959
+    },
+    {
+      "feature": "district_Satara",
+      "importance": 0.3928
+    },
+    {
+      "feature": "physical_progress",
+      "importance": 0.3853
+    },
+    {
+      "feature": "open_issues",
+      "importance": 0.307
+    },
+    {
+      "feature": "total_issues",
+      "importance": 0.2793
+    },
+    {
+      "feature": "elapsed_duration_days",
+      "importance": 0.2692
+    }
+  ],
+  "disclaimer": "This model estimates cost-overrun risk from available historical project data. Model performance depends on dataset quality, sample size, representativeness, and the availability of prediction-time information."
+}

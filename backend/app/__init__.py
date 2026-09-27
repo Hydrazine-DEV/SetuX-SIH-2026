@@ -1,0 +1,1 @@
+"""SetuX app package"""

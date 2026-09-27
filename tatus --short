@@ -1,0 +1,18 @@
+warning: in the working copy of 'backend/app/api/analytics.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/app/api/projects.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/app/database/database.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/app/main.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/app/models/alert.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/app/models/report.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/app/pipeline/loader.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/app/pipeline/target_builder.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/app/schemas/__init__.py', LF will be replaced by CRLF the next time Git touches it
+backend/app/api/analytics.py
+backend/app/api/projects.py
+backend/app/database/database.py
+backend/app/main.py
+backend/app/models/alert.py
+backend/app/models/report.py
+backend/app/pipeline/loader.py
+backend/app/pipeline/target_builder.py
+backend/app/schemas/__init__.py
